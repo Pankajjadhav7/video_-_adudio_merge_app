@@ -1,1 +1,3 @@
-timeout = 300  # 5 minutes
+workers = 1
+threads = 2
+timeout = 300

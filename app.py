@@ -88,5 +88,6 @@ def download_file(filename):
     return send_file(filepath, as_attachment=True)
 
 
-if __name__  == "__main__":
-    app.run(host='0.0.0.0', debug=True, port=5002)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5002))  # default 5002 for local
+    app.run(host="0.0.0.0", port=port, debug=False)
