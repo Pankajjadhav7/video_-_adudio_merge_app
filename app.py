@@ -54,31 +54,30 @@ def merge_video_audio():
         video_file = request.files['video_file']
         audio_file = request.files['audio_file']
 
-        # Save uploaded files temporarily
-        temp_dir = tempfile.mkdtemp()
-        video_path = os.path.join(temp_dir, video_file.filename)
-        audio_path = os.path.join(temp_dir, audio_file.filename)
-        output_path = os.path.join(temp_dir, "merged_output.mp4")
+        # Save uploaded files into /tmp (Render allows only /tmp for writes)
+        video_path = os.path.join("/tmp", video_file.filename)
+        audio_path = os.path.join("/tmp", audio_file.filename)
+        output_path = os.path.join("/tmp", "merged_output.mp4")
 
         video_file.save(video_path)
         audio_file.save(audio_path)
 
-        # Merge video and audio
+        # Merge video + audio
         video_clip = VideoFileClip(video_path)
         audio_clip = AudioFileClip(audio_path)
 
-        # Ensure video matches audio duration (or trim audio if needed)
-        final_clip = video_clip.set_audio(audio_clip).set_duration(min(video_clip.duration, audio_clip.duration))
+        final_clip = video_clip.set_audio(audio_clip).set_duration(
+            min(video_clip.duration, audio_clip.duration)
+        )
 
         # Export merged video
         final_clip.write_videofile(output_path, codec="libx264", audio_codec="aac")
 
-        # Return file for download
+        # Return file directly for download
         return send_file(output_path, as_attachment=True, download_name="merged_video.mp4")
 
     except Exception as e:
         return jsonify({"status": "failed", "error": str(e)}), 500
-
 
 
 @app.route("/download/<filename>", methods=["GET"])
