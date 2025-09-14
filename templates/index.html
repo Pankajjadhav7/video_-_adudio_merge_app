@@ -2,130 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎬 Video + 🎵 Audio Merger</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #6a11cb, #2575fc);
-      color: white;
-      text-align: center;
-      padding: 40px;
-    }
-    h1 {
-      margin-bottom: 20px;
-      font-size: 2.5em;
-    }
-    .upload-box {
-      background: rgba(255, 255, 255, 0.1);
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-      display: inline-block;
-      width: 420px;
-    }
-    input[type="file"] {
-      margin: 15px 0;
-      padding: 10px;
-      border-radius: 8px;
-      background: #fff;
-      color: #000;
-      cursor: pointer;
-    }
-    button {
-      background: #ff4081;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 25px;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      background: #e91e63;
-    }
-    #message {
-      margin-top: 20px;
-      font-weight: bold;
-    }
-    #download-link {
-      display: none;
-      margin-top: 20px;
-      background: #4caf50;
-      padding: 12px 20px;
-      border-radius: 25px;
-      text-decoration: none;
-      color: white;
-    }
-    #download-link:hover {
-      background: #388e3c;
-    }
-    #video-preview {
-      display: none;
-      margin-top: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      max-width: 100%;
-    }
-  </style>
+  <title>Video + Audio Merger</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>🎬 Video + 🎵 Audio Merger</h1>
-  <div class="upload-box">
-    <form id="uploadForm" enctype="multipart/form-data">
-      <label for="video_file">Upload Video:</label><br>
-      <input type="file" name="video_file" id="video_file" accept="video/*" required><br>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
-      <label for="audio_file">Upload Audio:</label><br>
-      <input type="file" name="audio_file" id="audio_file" accept="audio/*" required><br>
+  <div class="bg-white shadow-lg rounded-2xl p-8 w-full max-w-lg text-center">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">🎬 Merge Video & Audio</h1>
 
-      <button type="submit">Merge & Download</button>
+    <!-- Upload form -->
+    <form id="mergeForm" class="space-y-4">
+      <div>
+        <label class="block text-gray-700 font-medium">Upload Video:</label>
+        <input type="file" id="video_file" name="video_file" accept="video/*" required
+          class="mt-2 w-full border border-gray-300 p-2 rounded-lg">
+      </div>
+
+      <div>
+        <label class="block text-gray-700 font-medium">Upload Audio:</label>
+        <input type="file" id="audio_file" name="audio_file" accept="audio/*" required
+          class="mt-2 w-full border border-gray-300 p-2 rounded-lg">
+      </div>
+
+      <button type="submit"
+        class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 w-full">
+        Merge Files
+      </button>
     </form>
-    <p id="message"></p>
-    <a id="download-link" href="#" download>⬇ Download Merged Video</a>
 
-    <!-- Video Preview -->
-    <video id="video-preview" controls></video>
+    <!-- Status -->
+    <div id="status" class="mt-4 text-gray-700 font-medium"></div>
+
+    <!-- Download link -->
+    <div id="downloadSection" class="mt-6 hidden">
+      <a id="downloadLink"
+        class="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700"
+        download>
+        ⬇️ Download Merged Video
+      </a>
+    </div>
   </div>
 
   <script>
-    const form = document.getElementById("uploadForm");
-    const message = document.getElementById("message");
-    const downloadLink = document.getElementById("download-link");
-    const videoPreview = document.getElementById("video-preview");
+    const form = document.getElementById("mergeForm");
+    const statusDiv = document.getElementById("status");
+    const downloadSection = document.getElementById("downloadSection");
+    const downloadLink = document.getElementById("downloadLink");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      message.textContent = "⏳ Processing your video... Please wait.";
-      downloadLink.style.display = "none";
-      videoPreview.style.display = "none";
+      statusDiv.textContent = "⏳ Merging files... Please wait.";
+      downloadSection.classList.add("hidden");
 
-      const formData = new FormData(form);
+      const formData = new FormData();
+      formData.append("video_file", document.getElementById("video_file").files[0]);
+      formData.append("audio_file", document.getElementById("audio_file").files[0]);
+
       try {
         const response = await fetch("/merge", {
           method: "POST",
           body: formData,
         });
 
-        if (response.ok) {
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          
-          // Show download link
-          downloadLink.href = url;
-          downloadLink.style.display = "inline-block";
-          
-          // Show video preview
-          videoPreview.src = url;
-          videoPreview.style.display = "block";
-          
-          message.textContent = "✅ Merge Successful! Preview or download your video below.";
+        const result = await response.json();
+
+        if (result.status === "success") {
+          statusDiv.textContent = "✅ Merge completed!";
+          downloadLink.href = result.download_url;
+          downloadSection.classList.remove("hidden");
+
+          // Auto-download the merged file
+          setTimeout(() => {
+            downloadLink.click();
+          }, 1000);
         } else {
-          message.textContent = "❌ Failed to merge files.";
+          statusDiv.textContent = "❌ Error: " + result.error;
         }
       } catch (error) {
-        message.textContent = "⚠️ Error: " + error.message;
+        statusDiv.textContent = "❌ Failed: " + error.message;
       }
     });
   </script>
